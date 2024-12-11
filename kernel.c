@@ -21,46 +21,6 @@ enum {
     TIMER_VALUE_OFFSET = 0x404
 };
 
-enum {
-
-    POWER =          0b11111111000000001111110100000010,
-    BRIGHTEN =       0b11111111000000001100010100111010,
-    DARKEN =         0b11111111000000000100010110111010,
-    RED =            0b11111111000000001100010100111010,
-    R1 =             0b11111111000000001101010100101010,
-    R2 =             0b11111111000000001111010100001010,
-    R3 =             0b11111111000000001100011100111000,
-    R4 =             0b11111111000000001110011100011000,
-    R_UP =           0b11111111000000001111011100001000,
-    R_DOWN =         0b11111111000000001100111100110000,
-    GREEN =          0b01111111100000000011001011001101,
-    G1 =             0b11111111000000000101010110101010,
-    G2 =             0b11111111000000000111010110001010,
-    G3 =             0b01111111100000000010001111011100,
-    G4 =             0b11111111000000000110011110011000,
-    G_UP =           0b11111111000000000111011110001000,
-    G_DOWN =         0b11111111000000000100111110110000,
-    BLUE =           0b11111111000000000101110110100010,
-    B1 =             0b11111111000000000110110110010010,
-    B2 =             0b11111111000000000100110110110010,
-    B3 =             0b01111111100000000100001110111100,
-    B4 =             0b11111111000000001010011101011000,
-    B_UP =           0b11111111000000001011011101001000,
-    B_DOWN =         0b11111111000000001000111101110000,
-    WHITE =          0b11111111000000001101110100100010,
-    W1 =             0b11111111000000001110110100010010,
-    W2 =             0b11111111000000001100110100110010,
-    W3 =             0b11111111000000000000011111111000,
-    W4 =             0b11111111000000000010011111011000,
-
-    DIY1 =           0b11111111000000001110111100010000,
-    DIY2 =           0b11111111000000000110111110010000,
-    DIY3 =           0b11111111000000001010111101010000,
-    DIY4 =           0b11111111000000001101111100100000,
-    DIY5 =           0b11111111000000000101111110100000,
-    DIY6 =           0b11111111000000001001111101100000
-};
-
 long SET_BASE = (long)(GPIO_BASE + GPSET0_OFFSET);
 long SET_BASE1 = (long)(GPIO_BASE + GPSET1_OFFSET);
 long CLEAR_BASE = (long)(GPIO_BASE + GPCLR0_OFFSET);
@@ -245,13 +205,13 @@ void ir_send_data(unsigned int data, unsigned int data_length, unsigned int pin_
     reset_clock_irq();
     send_leading_pulse(pin_number);
 
-    for(int i = data_length - 1; i >= 0; i--) {
+    for(int i = 0; i < data_length; i++) {
 
         if(data & (1 << i)) {
-            ir_send0(pin_number);
+            ir_send1(pin_number);
             reset_clock_irq();
         } else {
-            ir_send1(pin_number);
+            ir_send0(pin_number);
             reset_clock_irq();
         }
 
@@ -315,32 +275,6 @@ void uart_writeText(char *buffer) {
     }
 }
 
-void receive_codes() {
-
-    unsigned int ticks_per_us = clock_speed / 1000000;
-
-    if(get_pin_value(24) == 0) {
-
-        pause(600); // a little longer than first pulse for data bit
-        while(get_pin_value(24) == 0) {} // in case of stray long signal
-        
-        reset_clock_irq();
-        load_clock(1000 * ticks_per_us);
-
-        while(get_pin_value(24) == 1) {}
-
-        if(has_clock_finished()) {
-            uart_writeText("0");
-        } else {
-            uart_writeText("1");
-        }
-
-        reset_clock_irq();
-
-    }
-
-}
-
 void main() {
 
     unsigned int last_value = 0;
@@ -364,40 +298,71 @@ void main() {
 
     uart_writeText("Initializing...\n");
 
-    ir_send_data(POWER, 32, 20);
-    pause(1000000);
-    ir_send_data(DIY1, 32, 20);
-    pause(1000000);
+    long lower_32 = 0xFE003000 + 0x04;
 
     while(1) {
 
-        unsigned int num_steps = 26;
+        unsigned int ticks_per_us = clock_speed / 1000000;
 
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(R_UP, 32, 20);
-            pause(20000);
-        }
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(G_UP, 32, 20);
-            pause(20000);
-        }
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(B_UP, 32, 20);
-            pause(20000);
-        }
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(R_DOWN, 32, 20);
-            pause(20000);
-        }
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(G_DOWN, 32, 20);
-            pause(20000);
-        }
-        for(int i = 0; i < num_steps; i++) {
-            ir_send_data(B_DOWN, 32, 20);
-            pause(20000);
+        while(1) {
+
+            if(get_pin_value(24) == 1) {
+                pause(20000);
+                ir_send_data((unsigned int)4244768519, 32, 20);
+            }
+
         }
 
+        
+
+        //LED power
+            // 11111111 00000000 11111101 00000010 -- desired output
+            
+            // 10111111010000001111111100000000 -- inverted?
+            // 01000000 10111111 00000000 11111111 -- reversed
+
+        //LED blue
+            // 00 11111111 00000000 01011101 10100010
+
+        // TV power
+            // 00 00011111 00011111 10111111 01000000
+            // 522174272
+            // 00000010111111011111100011111000
+            // 11111101000000100000011100000111
+
+
+        if(get_pin_value(24) == 0) {
+
+            unsigned int start_time = *(volatile unsigned int*)lower_32;
+
+            pause(600); // a little longer than first pulse for data bit
+            while(get_pin_value(24) == 0) {} // in case of stray long signal
+
+            if(*(volatile unsigned int*)lower_32 - start_time > 10000) {
+                uart_writeText("Initial pulse");
+            }
+            
+            reset_clock_irq();
+            load_clock(1000 * ticks_per_us);
+
+            start_time = *(volatile unsigned int*)lower_32;
+
+            while(get_pin_value(24) == 1) {}
+
+            if(has_clock_finished()) {
+                uart_writeText("0");
+                if(*(volatile unsigned int*)lower_32 - start_time > 5000) {
+                    uart_writeText("AGC");
+                }
+            } else {
+                uart_writeText("1");
+            }
+
+            reset_clock_irq();
+
+        }
+
+        ///
     }
 
 }
