@@ -1,3 +1,5 @@
+// https://github.com/babbleberry/rpi4-osdev/blob/master/part1-bootstrapping/boot.S
+
 .section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
 
 .global _start  // Execution starts here

@@ -1,3 +1,5 @@
+# https://github.com/alexwerner9/IR-remote-control/blob/master/Makefile
+
 CFILES = $(wildcard *.c)
 OFILES = $(CFILES:.c=.o)
 GCCFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -O0

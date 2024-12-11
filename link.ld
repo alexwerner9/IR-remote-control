@@ -1,3 +1,5 @@
+/* https://github.com/alexwerner9/IR-remote-control/blob/master/link.ld */
+
 SECTIONS
 {
     . = 0x80000;     /* Kernel load address for AArch64 */
